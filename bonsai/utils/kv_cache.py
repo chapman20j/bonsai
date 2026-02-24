@@ -207,9 +207,9 @@ class CyclicCache(CacheProtocol):
         self.k_cache[...] = jax.lax.dynamic_update_slice(self.k_cache[...], k, slice_indices)
         self.v_cache[...] = jax.lax.dynamic_update_slice(self.v_cache[...], v, slice_indices)
         self.cur_ind[...] = self.cur_ind[...] + k.shape[1]
-    
+
     def compute_causal_mask(self, input_len: int):
-        assert self.start_ind_initialized, "Must initialize start_ind before computing causal mask"  
+        assert self.start_ind_initialized, "Must initialize start_ind before computing causal mask"
         b, c = self.batch_size, self.cache_size
         input_ids = jnp.arange(input_len)
         circular_physical_ids = jnp.arange(c)
@@ -218,7 +218,7 @@ class CyclicCache(CacheProtocol):
         is_causal = seq_arange[:, None] >= cache_arange[None, :]
         is_in_window = seq_arange[:, None] - cache_arange[None, :] < c
         is_not_padding = cache_arange[None, None, :] >= self.start_ind[:, None, None]
-        causal_mask = is_causal & is_in_window & is_not_padding  
+        causal_mask = is_causal & is_in_window & is_not_padding
         return causal_mask.astype(jnp.bool_)
 
 

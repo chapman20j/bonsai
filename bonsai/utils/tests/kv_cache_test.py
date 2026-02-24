@@ -14,7 +14,6 @@
 
 
 from absl.testing import absltest
-import jax
 import jax.numpy as jnp
 import numpy as np
 
@@ -29,13 +28,13 @@ class TestLayerCache(absltest.TestCase):
         self.num_kv_heads = 1
         self.head_dim = 1
         self.dtype = jnp.float32
-        
+
         self.lc = LayerCache(
             num_kv_heads=self.num_kv_heads,
             head_dim=self.head_dim,
             batch_size=self.batch_size,
             cache_size=self.cache_size,
-            dtype=self.dtype
+            dtype=self.dtype,
         )
 
     def test_init(self):
@@ -47,10 +46,10 @@ class TestLayerCache(absltest.TestCase):
         segment_ids = jnp.array([[0, 0, 1, 1], [1, 1, 1, 1]])
         k_new = jnp.ones((2, 4, 1, 1))
         v_new = jnp.ones((2, 4, 1, 1))
-        
+
         self.lc._init_start_ind(segment_ids)
         self.lc.prefill(k_new, v_new, segment_ids)
-        
+
         self.assertEqual(self.lc.cur_ind[...], 4)
         np.testing.assert_array_equal(self.lc.start_ind[...], np.array([2, 0]))
         np.testing.assert_array_equal(self.lc.k_cache[:, :4, :, :], k_new)
@@ -60,7 +59,7 @@ class TestLayerCache(absltest.TestCase):
         self.lc._init_start_ind(segment_ids)
         k_val = jnp.array([[[[10.0]]], [[[20.0]]]])
         v_val = jnp.array([[[[10.0]]], [[[20.0]]]])
-        
+
         self.lc.update(k_val, v_val)
         self.assertEqual(self.lc.cur_ind[...], 1)
         self.assertEqual(self.lc.k_cache[0, 0, 0, 0], 10.0)
@@ -70,7 +69,7 @@ class TestLayerCache(absltest.TestCase):
         segment_ids = jnp.array([[0, 1], [1, 1]])
         self.lc._init_start_ind(segment_ids)
         mask = self.lc.compute_causal_mask(2)
-        
+
         self.assertFalse(jnp.any(mask[0, 0, :]))
         self.assertTrue(mask[1, 0, 0])
         self.assertFalse(mask[1, 0, 1])
@@ -84,13 +83,13 @@ class TestCyclicCache(absltest.TestCase):
         self.num_kv_heads = 1
         self.head_dim = 1
         self.dtype = jnp.float32
-        
+
         self.cc = CyclicCache(
             num_kv_heads=self.num_kv_heads,
             head_dim=self.head_dim,
             batch_size=self.batch_size,
             cache_size=self.cache_size,
-            dtype=self.dtype
+            dtype=self.dtype,
         )
 
     def test_init(self):
@@ -107,13 +106,13 @@ class TestCyclicCache(absltest.TestCase):
     def test_update_after_cache_full(self):
         segment_ids = jnp.ones((1, 4), dtype=jnp.int32)
         self.cc._init_start_ind(segment_ids)
-        
+
         k_fill = jnp.ones((1, 4, 1, 1))
         self.cc.update(k_fill, k_fill)
 
         k_new = jnp.array([[[[99.0]]]])
         self.cc.update(k_new, k_new)
-        
+
         self.assertEqual(self.cc.cur_ind[...], 5)
         self.assertEqual(self.cc.k_cache[0, 0, 0, 0], 99.0)
         self.assertEqual(self.cc.k_cache[0, 1, 0, 0], 1.0)
@@ -130,8 +129,8 @@ class TestCyclicCache(absltest.TestCase):
         segment_ids = jnp.ones((1, 1), dtype=jnp.int32)
         self.cc._init_start_ind(segment_ids)
         self.cc.cur_ind[...] = 6
-        
-        mask = self.cc.compute_causal_mask(1) # Mask for token at Pos 5
+
+        mask = self.cc.compute_causal_mask(1)  # Mask for token at Pos 5
         self.assertTrue(jnp.all(mask[0, 0, :]))
 
         self.cc.cur_ind[...] = 10
