@@ -13,12 +13,12 @@
 # limitations under the License.
 
 
+from absl.testing import absltest
 import jax
 import jax.numpy as jnp
-from absl.testing import absltest
 import numpy as np
 
-from bonsai.utils.kv_cache import LayerCache, CyclicCache
+from bonsai.utils.kv_cache import CyclicCache, LayerCache
 
 
 class TestLayerCache(absltest.TestCase):
